@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="fe4b8d81-7cbd-4076-818e-b08f3eef7874" name="Changes" comment="first commit">
+      <change beforePath="$PROJECT_DIR$/.idea/RAMS-TSAD.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/RAMS-TSAD.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_006_UCR_Anomaly_DISTORTEDCIMIS44AirTemperature2_rf_10_20_0.5.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_lr_10_20_0.5.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_lr_20_50_0.5.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_lr_4_4_0.5.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_lr_5_10_0.2.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_rf_10_20_0.1.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_rf_10_20_0.5.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_rf_10_20_0.5___.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_rf_20_100_0.3.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_rf_20_50_0.2__.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_rf_2_2_0.5.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_rf_4_4_0.2.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_rf_5_10_0.2.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_anomaly_archive_031_UCR_Anomaly_DISTORTEDInternalBleeding20_svm_20_50_0.2.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ensemble_scores_smd_machine-1-1_rf_10_20_0.3.txt" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="FlaskConsoleOptions" custom-start-script="import sys&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo&#10;locals().update(ScriptInfo(create_app=None).load_app().make_shell_context())&#10;print(&quot;Python %s on %s\nApp: %s [%s]\nInstance: %s&quot; % (sys.version, sys.platform, app.import_name, app.env, app.instance_path))">
+    <envs>
+      <env key="FLASK_APP" value="app" />
+    </envs>
+    <option name="myCustomStartScript" value="import sys&#10;sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo&#10;locals().update(ScriptInfo(create_app=None).load_app().make_shell_context())&#10;print(&quot;Python %s on %s\nApp: %s [%s]\nInstance: %s&quot; % (sys.version, sys.platform, app.import_name, app.env, app.instance_path))" />
+    <option name="myEnvs">
+      <map>
+        <entry key="FLASK_APP" value="app" />
+      </map>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2gY64nmubVi7mlgRmfJDHnKi2Sn" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.__init__ (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.__init__ (2).executor&quot;: &quot;Run&quot;,
+    &quot;Python.__init__.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;project.propVCSSupport.DirectoryMappings&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\Master\SS_2024_Thesis_ISA\Thesis\Work-docs\RAMS-TSAD" />
+      <recent name="D:\Master\SS_2024_Thesis_ISA\Thesis\Work-docs\RAMS-TSAD\Metrics" />
+      <recent name="D:\Master\SS_2024_Thesis_ISA\Thesis\Work-docs\RAMS-TSAD\Model_Selection" />
+      <recent name="D:\Master\SS_2024_Thesis_ISA\Thesis\Work-docs\RAMS-TSAD\Controller" />
+      <recent name="D:\Master\SS_2024_Thesis_ISA\Thesis\Work-docs\RAMS-TSAD\Algorithms" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Master\SS_2024_Thesis_ISA\Thesis\Work-docs\RAMS-TSAD" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.app">
+    <configuration name="__init__ (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="RAMS-TSAD" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Services/mmodel" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Services/mmodel/__init__.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="__init__ (2)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="RAMS-TSAD" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Model_Selection" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Model_Selection/__init__.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="__init__" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="RAMS-TSAD" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Model_Optimization" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Model_Optimization/__init__.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="RAMS-TSAD" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/app.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.app" />
+        <item itemvalue="Python.__init__ (2)" />
+        <item itemvalue="Python.__init__ (1)" />
+        <item itemvalue="Python.__init__" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-1d06a55b98c1-74d2a5396914-JavaScript-PY-241.14494.241" />
+        <option value="bundled-python-sdk-0509580d9d50-28c9f5db9ffe-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-241.14494.241" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="fe4b8d81-7cbd-4076-818e-b08f3eef7874" name="Changes" comment="" />
+      <created>1715861974745</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1715861974745</updated>
+      <workItem from="1715861977970" duration="31176000" />
+      <workItem from="1715961412102" duration="7833000" />
+      <workItem from="1716031607181" duration="47376000" />
+      <workItem from="1716208138705" duration="40584000" />
+      <workItem from="1716656156149" duration="15190000" />
+      <workItem from="1716717003877" duration="19650000" />
+      <workItem from="1716818041955" duration="8104000" />
+      <workItem from="1716982859474" duration="106527000" />
+      <workItem from="1717416666305" duration="629000" />
+      <workItem from="1717417359255" duration="892000" />
+      <workItem from="1717418333729" duration="1027000" />
+      <workItem from="1717419452849" duration="1188000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../../../../../Anaconda/envs/RAMSTSAD/Lib/site-packages/pandas/compat/pickle_compat.py</url>
+          <line>159</line>
+          <option name="timeStamp" value="16" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../../../../../Anaconda/envs/RAMSTSAD/Lib/site-packages/pandas/compat/pickle_compat.py</url>
+          <line>160</line>
+          <option name="timeStamp" value="17" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../../../../../Anaconda/envs/RAMSTSAD/Lib/site-packages/sipbuild/generator/instantiations.py</url>
+          <line>109</line>
+          <option name="timeStamp" value="18" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Metrics/Ensemble_GA.py</url>
+          <line>339</line>
+          <option name="timeStamp" value="33" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Metrics/Ensemble_GA.py</url>
+          <line>548</line>
+          <option name="timeStamp" value="34" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Metrics/Ensemble_GA.py</url>
+          <line>553</line>
+          <option name="timeStamp" value="35" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/RAMS_TSAD$app.coverage" NAME="app Coverage Results" MODIFIED="1717366067654" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/RAMS_TSAD$__init____1_.coverage" NAME="__init__ (1) Coverage Results" MODIFIED="1716044049585" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Services/mmodel" />
+    <SUITE FILE_PATH="coverage/RAMS_TSAD$__init__.coverage" NAME="__init__ Coverage Results" MODIFIED="1715963455031" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Model_Optimization" />
+    <SUITE FILE_PATH="coverage/RAMS_TSAD$__init____2_.coverage" NAME="__init__ (2) Coverage Results" MODIFIED="1717358483042" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Model_Selection" />
+  </component>
+</project>
