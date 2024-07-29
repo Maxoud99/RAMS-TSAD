@@ -10,7 +10,8 @@
 
 import numpy as np
 from typing import Optional, List, Union
-from sklearn.metrics import ndcg_score, average_precision_score
+from sklearn.metrics import ndcg_score, average_precision_score, precision_score
+
 from scipy.stats import kendalltau, norm
 import random
 from Utils.vus_utils import metricor
@@ -43,6 +44,74 @@ def f1_soft_score(predict, actual):
     f1 = 2 * precision * recall / (precision + recall + 0.00001)
     
     return f1, precision, recall, TP, TN, FP, FN
+
+
+
+
+
+def get_events(y_test, outlier=1, normal=0, breaks=[]):
+    events = dict()
+    label_prev = normal
+    event = 0  # corresponds to no event
+    event_start = 0
+    for tim, label in enumerate(y_test):
+        if label == outlier:
+            if label_prev == normal:
+                event += 1
+                event_start = tim
+            elif tim in breaks:
+                # A break point was hit, end current event and start new one
+                event_end = tim - 1
+                events[event] = (event_start, event_end)
+                event += 1
+                event_start = tim
+
+        else:
+            # event_by_time_true[tim] = 0
+            if label_prev == outlier:
+                event_end = tim - 1
+                events[event] = (event_start, event_end)
+        label_prev = label
+
+    if label_prev == outlier:
+        event_end = tim - 1
+        events[event] = (event_start, event_end)
+    return events
+
+
+
+
+def get_composite_fscore_raw(pred_labels, y_test, return_prec_rec=False):
+    pred_labels_binary= (pred_labels > 0.5).astype(int)
+    true_events = get_events(y_test)
+    tp = np.sum([pred_labels[start:end + 1].any() for start, end in true_events.values()])
+    fn = len(true_events) - tp
+    rec_e = tp/(tp + fn)
+    prec_t = precision_score(y_test, pred_labels_binary)
+    fscore_c = 2 * rec_e * prec_t / (rec_e + prec_t)
+    if prec_t == 0 and rec_e == 0:
+        fscore_c = 0
+    if return_prec_rec:
+        return prec_t, rec_e, fscore_c
+    return fscore_c
+
+
+def get_composite_fscore_from_scores(score_t_test, thres, true_events, prec_t, return_prec_rec=False):
+    pred_labels = score_t_test > thres
+    tp = np.sum([pred_labels[start:end + 1].any() for start, end in true_events.values()])
+    fn = len(true_events) - tp
+    rec_e = tp/(tp + fn)
+    fscore_c = 2 * rec_e * prec_t / (rec_e + prec_t)
+    if prec_t == 0 and rec_e == 0:
+        fscore_c = 0
+    if return_prec_rec:
+        return prec_t, rec_e, fscore_c
+    return fscore_c
+
+
+
+
+
 
 def adjust_predicts(score, label,
                     threshold=None,

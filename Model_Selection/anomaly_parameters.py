@@ -31,10 +31,10 @@ ANOMALY_PARAM_GRID = {
     'flip': {
         'anomaly_type': ['flip'],
         'random_parameters': [False],
-        'max_anomaly_length': [4],
+        'max_anomaly_length': [2],
         'anomaly_size_type': ['mae'],
         'feature_id': [None],
-        'correlation_scaling': [5],
+        'correlation_scaling': [2],
         'scale': [2],
     },
     'speedup': {

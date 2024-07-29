@@ -1,10 +1,22 @@
 # time_series_framework/app.py
 import copy
 import matplotlib.pyplot as plt
+from datetime import datetime
+from Model_Selection.Sensitivity_robustness.Adversarial_testing import AdversarialTimeSeriesEvaluator
+from Model_Selection.Sensitivity_robustness.GAN_test import run_Gan
+from Model_Selection.Sensitivity_robustness.Monte_Carlo_Simulation import run_monte_carlo_simulation
+from Model_Selection.Sensitivity_robustness.model_stress_testing import run_robustness_tests
+from Model_Selection.Sensitivity_robustness.off_by_threshold_testing import intersperse_borderline_normal_points, \
+    run_off_by_threshold
+from Model_Selection.Thompson_Sampling import run_linear_thompson_sampling, initialize_sliding_windows
+from Model_Selection.rank_aggregation import enhanced_markov_chain_rank_aggregator, \
+    enhanced_markov_chain_rank_aggregator_text
 
-save_dir = "D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD/Mononito/trained_models/anomaly_archive/031_UCR_Anomaly_DISTORTEDInternalBleeding20/"
-# algorithm_list = ['DGHL', 'LSTMVAE', 'GMM', 'KDE']
-# algorithm_list_instances = ['DGHL_1', 'DGHL_2', 'DGHL_3', 'DGHL_4', 'LSTMVAE_1', 'LSTMVAE_2', 'LSTMVAE_3', 'LSTMVAE_4', 'GMM_1', 'GMM_2', 'GMM_3', 'GMM_4', 'KDE_1', 'KDE_2', 'KDE_3', 'KDE_4']
+save_dir = "D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD/Mononito/trained_models/anomaly_archive/074_UCR_Anomaly_DISTORTEDqtdbSel1005V/"
+# algorithm_list = ['DGHL', 'LSTMVAE', 'MD', 'RM', 'LOF', 'CBLOF']
+# algorithm_list_instances = ['CBLOF_1', 'CBLOF_2', 'CBLOF_3', 'CBLOF_4', 'DGHL_1', 'DGHL_2', 'DGHL_3', 'DGHL_4', 'LOF_1',
+#                             'LOF_2', 'LOF_3', 'LOF_4', 'LSTMVAE_1', 'LSTMVAE_2', 'LSTMVAE_3', 'LSTMVAE_4', 'MD_1',
+#                             'RM_1', 'RM_2', 'RM_3']
 algorithm_list = ['LOF', 'NN', 'RNN']
 algorithm_list_instances = ['LOF_1', 'LOF_2', 'LOF_3', 'LOF_4', 'NN_1', 'NN_2', 'NN_3', 'RNN_1', 'RNN_2', 'RNN_3',
                             'RNN_4']
@@ -18,9 +30,7 @@ from loguru import logger
 import traceback
 import numpy as np
 from Model_Selection.inject_anomalies import Inject
-from Metrics.Ensemble_GA import genetic_algorithm
-from Model_Selection.Thompson_Sampling import (fit_thompson_sampling, initialize_windows, sample_model,
-                                               update_posteriors, calculate_reward, rank_models, plot_history)
+from Metrics.Ensemble_GA import genetic_algorithm, evaluate_individual_models, fitness_function
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +42,7 @@ def load_trained_models(algorithm_list, save_dir):
     trained_models = {}
     for model_name in algorithm_list:
         model_path = os.path.join(save_dir, f"{model_name}.pth")
-        print(model_path)
+        # print(model_path)
 
         if os.path.exists(model_path):
             with open(model_path, 'rb') as f:
@@ -44,14 +54,149 @@ def load_trained_models(algorithm_list, save_dir):
     return trained_models
 
 
+def run_model_selection_algorithms(train_data, test_data, dataset, entity, iteration):
+    # # # Monte Carlo Simulation
+    # monte_carlo_ranked_models_F1, monte_carlo_ranked_models_PR = run_monte_carlo_simulation(test_data,
+    #                                                                                         trained_models,
+    #                                                                                         algorithm_list_instances,
+    #                                                                                         dataset, entity,
+    #                                                                                         n_simulations=2,
+    #                                                                                         noise_level=0.1)
+    #
+    # # # Off by threshold testing
+    # ranked_by_f1, ranked_by_pr_auc, ranked_by_f1_names_sensitivity, ranked_by_pr_auc_names_sensitivity = run_off_by_threshold(
+    #     test_data,
+    #     trained_models,
+    #     algorithm_list_instances,
+    #     dataset,
+    #     entity)
+    #
+    # # robustness test
+    # # # stress_results=run_robustness_tests(test_data_before, ['spikes', 'flip'], algorithm_list_instances, trained_models)
+    # #
+    # # GAN testing
+    # values = run_Gan(test_data, trained_models, algorithm_list_instances, dataset, entity)
+    # directory = f'D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD/Outputs/robustness/GAN/{dataset}/{entity}/'
+    # Gan_ranked_by_f1, Gan_ranked_by_pr_auc, Gan_ranked_by_f1_names, Gan_ranked_by_pr_auc_names = values[0], values[
+    #     1], values[2], values[3]
+    #
+    # print("1- Monte carlo")
+    # print(monte_carlo_ranked_models_F1, monte_carlo_ranked_models_PR)
+    # print("2- Gan")
+    # print(Gan_ranked_by_f1_names, Gan_ranked_by_pr_auc_names)
+    # # print("3- Stress test")
+    # # print(stress_results)
+    # print("4- Off by threshold testing (sensitivity)")
+    # print(ranked_by_f1_names_sensitivity, ranked_by_pr_auc_names_sensitivity)
+    #
+    # # # Run genetic algorithm for model selection
+    # best_ensemble, best_f1, best_pr_auc, best_fitness, individual_predictions, base_model_predictions_train, base_model_predictions_test, y_true_train, y_true_test, meta_model_type = genetic_algorithm(
+    #     dataset, entity, train_data, test_data,
+    #     algorithm_list_instances, trained_models,
+    #     population_size=5, generations=10,
+    #     meta_model_type='rf', mutation_rate=0.1)
+    # logger.info(
+    #     f"Best ensemble: {best_ensemble} with F1 score {best_f1}, PR AUC {best_pr_auc}, and fitness {best_fitness}")
+    # print(
+    #     f"Best ensemble: {best_ensemble} with F1 score {best_f1}, PR AUC {best_pr_auc}, and fitness {best_fitness}")
+
+    # # ### Thompson Sampling
+    thompson_model_names = run_linear_thompson_sampling(
+        test_data=test_data,
+        trained_models=trained_models,
+        model_names=algorithm_list_instances,
+        dataset=dataset,
+        entity=entity,
+        iterations=50,
+        iteration=iteration
+    )
+
+    # # # Rank Aggregation
+    test_for_rank = [monte_carlo_ranked_models_F1, monte_carlo_ranked_models_PR,
+                     Gan_ranked_by_f1_names, Gan_ranked_by_pr_auc_names,
+                     ranked_by_f1_names_sensitivity, ranked_by_pr_auc_names_sensitivity
+                     ]
+
+    robust_agg = enhanced_markov_chain_rank_aggregator_text(test_for_rank)
+    full_ = [robust_agg[1], thompson_model_names]
+    full_aggregated = enhanced_markov_chain_rank_aggregator_text(full_)
+    print("Rank Aggregation")
+    print(robust_agg[1])
+    print(full_aggregated[1])
+    #
+    directory = f'D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD/Outputs/robust_aggregated/{dataset}/{entity}/'
+    os.makedirs(directory, exist_ok=True)
+    output_file = os.path.join(directory, f"robust_aggregated_results_{dataset}_{entity}_{iteration}.txt")
+
+    with open(output_file, 'w') as f:
+        f.write("Summary of robust tests:\n")
+        f.write("\n1- Monte carlo\n")
+        f.write(f"{monte_carlo_ranked_models_F1} \n {monte_carlo_ranked_models_PR} \n")
+        f.write("\n Gan\n")
+        f.write(f"{Gan_ranked_by_f1_names} \n {Gan_ranked_by_pr_auc_names} \n")
+        f.write("\n Off by threshold testing (sensitivity)\n")
+        f.write(f"{ranked_by_f1_names_sensitivity} \n {ranked_by_pr_auc_names_sensitivity} \n")
+        f.write(f"Robust rank aggregates\n")
+        f.write(f"{robust_agg}\n")
+        f.write(f"All aggregated\n")
+        f.write(f"{full_aggregated}\n")
+
+    return thompson_model_names[0], robust_agg[1], full_aggregated[
+        1], best_ensemble, individual_predictions, base_model_predictions_train, base_model_predictions_test, y_true_train, y_true_test, meta_model_type
+
+
+def find_num_falses(adjusted_y_pred_ind_current, test_data_copy, dataset, entity, values, full_aggregated,
+                    best_ensemble, iteration):
+    misclassified_current = []
+    for predicts in adjusted_y_pred_ind_current:
+        true_values = np.array(test_data_copy.entities[0].labels)  # 1 for anomaly, 0 for normal
+
+        predicted_values = np.array(predicts)  # True for predicted anomaly, False for no predicted anomaly
+
+        # Converting boolean predictions to integer for easy plotting (True to 1, False to 0)
+        predicted_int = predicted_values.astype(int)
+
+        # Identifying incorrect predictions
+        incorrect_predictions = predicted_int != true_values
+        misclassified_count = np.sum(incorrect_predictions)  # Number of misclassifications
+        misclassified_current.append(misclassified_count)
+
+    misclassified_ensemble = []
+
+    for predicts in [values[3]]:
+        true_values = np.array(values[4])  # 1 for anomaly, 0 for normal
+
+        predicted_values = np.array(predicts)  # True for predicted anomaly, False for no predicted anomaly
+
+        # Converting boolean predictions to integer for easy plotting (True to 1, False to 0)
+        predicted_int = predicted_values.astype(int)
+
+        # Identifying incorrect predictions
+        incorrect_predictions = predicted_int != true_values
+        misclassified_count = np.sum(incorrect_predictions)  # Number of misclassifications
+        misclassified_ensemble.append(misclassified_count)
+
+    directory = f'D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD/Outputs/robust_aggregated/{dataset}/{entity}/'
+    os.makedirs(directory, exist_ok=True)
+    output_file = os.path.join(directory, f"new_robust_aggregated_results_{dataset}_{entity}_{iteration}.txt")
+
+    with open(output_file, 'w') as f:
+        f.write("Summary of falses:\n")
+        f.write(f"chosen model: {full_aggregated}\n")
+        f.write(f'{misclassified_current}\n')
+        f.write("Falses for the ensebmle:\n")
+        f.write(f"chosen ensemble: {best_ensemble}\n")
+        f.write(f'{misclassified_ensemble}')
+
+
 def run_app(algorithm_list, algorithm_list_instances):
     args = get_args_from_cmdline()
     data_dir = args['dataset_path']
     train_data = load_data(dataset='anomaly_archive', group='train',
-                           entities='031_UCR_Anomaly_DISTORTEDInternalBleeding20', downsampling=10,
+                           entities='074_UCR_Anomaly_DISTORTEDqtdbSel1005V', downsampling=10,
                            min_length=256, root_dir=data_dir, normalize=True, verbose=False)
     test_data = load_data(dataset='anomaly_archive', group='test',
-                          entities='031_UCR_Anomaly_DISTORTEDInternalBleeding20', downsampling=10,
+                          entities='074_UCR_Anomaly_DISTORTEDqtdbSel1005V', downsampling=10,
                           min_length=256, root_dir=data_dir, normalize=True, verbose=False)
 
     # Ensure data is correctly loaded
@@ -62,7 +207,7 @@ def run_app(algorithm_list, algorithm_list_instances):
     if not test_data.entities:
         logger.error("Failed to load test data. Please check the dataset and paths.")
         return
-    entity = '031_UCR_Anomaly_DISTORTEDInternalBleeding20'
+    entity = '074_UCR_Anomaly_DISTORTEDqtdbSel1005V'
     dataset = 'anomaly_archive'
     model_trainer = TrainModels(dataset=dataset,
                                 entity=entity,
@@ -87,28 +232,11 @@ def run_app(algorithm_list, algorithm_list_instances):
 
         anomaly_list = ['spikes']
 
-        # Use Thompson Sampling with Epsilon Greedy for model selection
-        print(f'test_data_before.entities[0].Y: \n {np.size(test_data.entities[0].Y)}')
-        print(f'test_data_before.entities[0].labels: \n {test_data.entities[0].labels}')
-        print(f'test_data_before.entities[0].X: \n {test_data.entities[0].X}')
-        print(f'test_data_before.entities[0].n_time : \n {test_data.entities[0].n_time}')
-        print(f'test_data_before.entities[0].mask : \n {np.size(test_data.entities[0].mask)}')
-        print(f'test_data_before.entities[0].verbose : \n {test_data.entities[0].verbose}')
-        print(f'test_data_before.entities[0].n_exogenous : \n {test_data.entities[0].n_exogenous}')
-        print(f'test_data_before.entities[0].n_features : \n {test_data.entities[0].n_features}')
         test_data_before = copy.deepcopy(test_data)
         train_data_before = copy.deepcopy(train_data)
         train_data, anomaliy_sizes_train = Inject(train_data, anomaly_list)
         test_data, anomaly_sizes = Inject(test_data, anomaly_list)
 
-        print(f'test_data.entities[0].Y: \n {np.size(test_data.entities[0].Y)}')
-        print(f'test_data.entities[0].labels: \n {test_data.entities[0].labels}')
-        print(f'test_data.entities[0].X: \n {test_data.entities[0].X}')
-        print(f'test_data.entities[0].n_time : \n {test_data.entities[0].n_time}')
-        print(f'test_data.entities[0].mask : \n {np.size(test_data.entities[0].mask)}')
-        print(f'test_data.entities[0].verbose : \n {test_data.entities[0].verbose}')
-        print(f'test_data.entities[0].n_exogenous : \n {test_data.entities[0].n_exogenous}')
-        print(f'test_data.entities[0].n_features : \n {test_data.entities[0].n_features}')
         anomaly_start = np.argmax(test_data.entities[0].labels)
         anomaly_end = test_data.entities[0].Y.shape[1] - np.argmax(test_data.entities[0].labels[::-1])
         fig, axes = plt.subplots(2, 1, sharex=True, figsize=(20, 6))
@@ -123,35 +251,81 @@ def run_app(algorithm_list, algorithm_list_instances):
         axes[1].plot(anomaly_sizes.flatten(), color='pink')
         axes[1].plot(test_data.entities[0].labels.flatten(), color='red')
         axes[1].set_title('Anomaly Scores', fontsize=16)
+        # Specify the directory
+        directory = f'D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD/Outputs/GA_Ens/{dataset}/{entity}/'
+        filename = f'ensemble_scores_{dataset}_{entity}_Data_vs_anomalies_{anomaly_list}.png'
+        full_path = os.path.join(directory, filename)
+
+        # Check if the directory exists, and if not, create it
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # Save the figure
+        # print(f'Saving {full_path}')
+        plt.savefig(full_path, dpi=300)  # Save as PNG file with high resolution
+
         plt.show()
 
-        # priors, history = fit_thompson_sampling(
-        #     dataset=test_data,
-        #     models=trained_models,
-        #     data=test_data.entities[0].Y,
-        #     targets=test_data.entities[0].labels,
-        #     initial_epsilon=0.1,
-        #     epsilon_decay=0.99,
-        #     f1_weight=0.5,
-        #     pr_auc_weight=0.5,
-        #     iterations=10
-        # )
-        # Rank models based on the final priors
-        # ranked_models = rank_models(priors)
-        # print("Ranked Models:", ranked_models)
+        data = test_data_before.entities[0].Y
+        targets = test_data_before.entities[0].labels
+        mask = test_data_before.entities[0].mask
+        iterations = 20
+        data_windows, targets_windows, New_mask, num_windows = initialize_sliding_windows(data, targets, mask,
+                                                                                          int(np.size(
+                                                                                              targets.flatten()) / iterations),
+                                                                                          int(np.size(
+                                                                                              targets.flatten()) / (
+                                                                                                       iterations))-5)
 
-        # Plot the history of model rankings
-        # plot_history(history, trained_models)
-        # Run genetic algorithm for model selection
-        best_ensemble, best_f1, best_pr_auc, best_fitness = genetic_algorithm(dataset, entity, train_data, test_data,
-                                                                              algorithm_list_instances, trained_models,
-                                                                              population_size=5, generations=5,
-                                                                              meta_model_type='lr', mutation_rate=0.2)
-        logger.info(
-            f"Best ensemble: {best_ensemble} with F1 score {best_f1}, PR AUC {best_pr_auc}, and fitness {best_fitness}")
-        print(
-            f"Best ensemble: {best_ensemble} with F1 score {best_f1}, PR AUC {best_pr_auc}, and fitness {best_fitness}")
-        # print(test_data.entities[0].Y)
+        test_data.entities[0].Y = data_windows[0]
+        test_data.entities[0].labels = targets_windows[0]
+        test_data.entities[0].mask = New_mask[0]
+        test_data.entities[0].n_time = np.size(targets_windows[0].flatten())
+        test_data.total_time = np.size(targets_windows[0].flatten())
+        test_data_new = copy.deepcopy(test_data)
+        test_data_new, anomaly_sizes = Inject(test_data_new, anomaly_list)
+        best_thompson, robust_agg, full_aggregated, best_ensemble, individual_predictions, base_model_predictions_train, base_model_predictions_test, y_true_train, y_true_test, meta_model_type = run_model_selection_algorithms(
+            train_data,
+            test_data_new, dataset,
+            entity, iteration=0)
+        i = 1
+        # Real-time evaluation
+        while i < iterations:
+            test_data.entities[0].Y = data_windows[i]
+            test_data.entities[0].labels = targets_windows[i]
+            test_data.entities[0].mask = New_mask[i]
+            test_data.entities[0].n_time = np.size(targets_windows[i].flatten())
+            test_data.total_time = np.size(targets_windows[i].flatten())
+            trained_models_new = {}
+
+            algorithm_list_new = []
+            for model in best_ensemble:
+                trained_models_new[model] = trained_models[model]
+                algorithm_list_new.append(model)
+
+            print("test me")
+            print([full_aggregated[0]])
+            test_data_new = copy.deepcopy(test_data)
+            test_data_new, anomaly_sizes = Inject(test_data_new, anomaly_list)
+            test_data_new_copy = copy.deepcopy(test_data_new)
+            individual_predictions, adjusted_y_pred_ind_current, F1_Score_list_ind_curent, PR_AUC_Score_list_ind_curent = evaluate_individual_models(
+                [full_aggregated[0]], test_data_new_copy, trained_models)
+            test_data_new_copy = copy.deepcopy(test_data_new)
+            values = fitness_function(best_ensemble, train_data, test_data_new_copy, trained_models_new,
+                                      individual_predictions,
+                                      base_model_predictions_train, algorithm_list_instances,
+                                      base_model_predictions_test, y_true_train, y_true_test,
+                                      meta_model_type=meta_model_type)
+            test_data_new_copy = copy.deepcopy(test_data_new)
+            find_num_falses(adjusted_y_pred_ind_current, test_data_new_copy, dataset, entity, values, full_aggregated[0],
+                            best_ensemble, iteration=i)
+
+            test_data_new_copy = copy.deepcopy(test_data_new)
+            best_thompson, robust_agg, full_aggregated, best_ensemble, individual_predictions, base_model_predictions_train, base_model_predictions_test, y_true_train, y_true_test, meta_model_type = run_model_selection_algorithms(
+                train_data,
+                test_data_new_copy, dataset,
+                entity, iteration=i)
+            i += 1
 
     except Exception as e:
         logger.info(f'Traceback for Entity: {entity} Dataset: {dataset}')

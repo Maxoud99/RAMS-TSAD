@@ -61,6 +61,8 @@ def Inject(data, anomaly_types):
     data.entities[0].labels = anomaly_labels_concatenated
     data.total_time = T_a_concatenated.shape[1]
     return data, anomaly_sizes
+
+
 class InjectAnomalies:
 
     def __init__(self,
@@ -139,7 +141,11 @@ class InjectAnomalies:
     def compute_anomaly_properties(self, T):
         """Compute properties of the random anomaly
         """
-        _, n_time = T.shape
+        if T.ndim > 1:
+            _, n_time = T.shape
+        else:
+            n_time = T.shape
+
         self.estimated_window_size = self.compute_window_size(
             T[self.anomalous_feature, :])
         self.anomaly_length = np.random.randint(
@@ -273,8 +279,10 @@ class InjectAnomalies:
             raise ValueError(
                 f'anomaly_type must be in {self._VALID_ANOMALY_TYPES} but {anomaly_type} was passed.'
             )
-
-        n_features, _ = T.shape
+        if T.ndim > 1:
+            n_features, _ = T.shape
+        else:
+            n_features = T.shape
 
         # timeseries_with_anomalies = np.zeros(T.shape)
         timeseries_with_anomalies = T.copy()
@@ -282,7 +290,10 @@ class InjectAnomalies:
         # Assume that T belongs to an entity
         # Choose a feature at random (which is at the heart of the anomaly)
         if feature_id is None:
-            features_with_signal = np.where(np.std(T, axis=1) > 0)[0]
+            if T.ndim > 1:
+                features_with_signal = np.where(np.std(T, axis=1) > 0)[0]
+            else:
+                features_with_signal = np.where(np.std(T) > 0)[0]
             self.anomalous_feature = np.random.choice(features_with_signal)
         else:
             self.anomalous_feature = feature_id
@@ -294,11 +305,12 @@ class InjectAnomalies:
 
         # Compute the correlation of this feature with all other features
         if len(T) > 1:
-            correlation_vec = self.compute_crosscorrelation(T)[
-                self.anomalous_feature]
-            correlation_vec = np.sign(correlation_vec) * np.power(
-                np.abs(correlation_vec), 1 / correlation_scaling)
-            correlation_vec[np.isnan(correlation_vec)] = 0
+            if T.ndim > 1:
+                correlation_vec = self.compute_crosscorrelation(T)[
+                    self.anomalous_feature]
+                correlation_vec = np.sign(correlation_vec) * np.power(
+                    np.abs(correlation_vec), 1 / correlation_scaling)
+                correlation_vec[np.isnan(correlation_vec)] = 0
         else:
             correlation_vec = np.ones(1)
         if self.verbose:

@@ -1,6 +1,7 @@
 import random
 import numpy as np
-from sklearn.metrics import f1_score, precision_recall_curve, auc
+from datetime import datetime
+from sklearn.metrics import precision_recall_curve, auc
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
@@ -14,8 +15,9 @@ from Utils.utils import visualize_data
 from dao.mdata.mdata import update_data_status_by_name, select_algorithms_by_data_entity, \
     select_inject_abn_types_by_data_entity
 from Model_Selection.model_selection import RankModels
-from Metrics.metrics import best_f1_linspace, range_based_precision_recall_f1_auc
+from Metrics.metrics import range_based_precision_recall_f1_auc, prauc, f1_score,f1_soft_score, get_composite_fscore_raw
 import matplotlib.pyplot as plt
+import os
 
 
 # class Mevaluation(object):
@@ -69,7 +71,7 @@ def initialize_population(algorithm_list, population_size):
         ensemble = random.sample(algorithm_list, k=ensemble_size)
         ensemble = tuple(sorted(ensemble))  # Canonical ordering and convert to tuple for set operations
 
-        if ensemble not in unique_ensembles:
+        if ensemble not in unique_ensembles and len(ensemble) > 1:
             unique_ensembles.add(ensemble)
             population.append(list(ensemble))  # Convert back to list for the population
 
@@ -202,6 +204,8 @@ def evaluate_model_consistently(data, model, model_name, is_ensemble=False):
         return y_true, y_scores, y_true_agg_dict, base_model_predictions_dict
 
 
+
+
 def evaluate_individual_models(algorithm_list, test_data, trained_models):
     """
     Evaluate individual models on the test data.
@@ -222,10 +226,14 @@ def evaluate_individual_models(algorithm_list, test_data, trained_models):
         model = trained_models.get(model_name)
         if model:
             y_true, y_scores, y_true_agg_dict, y_scores_dict = evaluate_model_consistently(test_data, model, model_name)
-            _, _, best_f1, pr_auc, adjusted_y_pred = range_based_precision_recall_f1_auc(y_true, y_scores)
+            # _, _, best_f1, pr_auc, adjusted_y_pred = range_based_precision_recall_f1_auc(y_true, y_scores)
+            best_f1, precision, recall, TP, TN, FP, FN = f1_score(y_scores, y_true)
+            # best_f1, precision, recall, TP, TN, FP, FN = f1_soft_score(y_scores, y_true)
+            # best_f1 = get_composite_fscore_raw(y_scores, y_true)
+            pr_auc = prauc(y_true, y_scores)
             logger.info(f"Model {model_name}: F1 score = {best_f1}, PR AUC = {pr_auc}")
             predictions[model_name] = (y_true, y_scores)
-            adjusted_y_pred_list.append(adjusted_y_pred)
+            adjusted_y_pred_list.append(y_scores)
             F1_Score_list.append(best_f1)
             PR_AUC_Score_list.append(pr_auc)
             logger.info(f"First 10 scores for model {model_name}: {y_scores[:10]}")
@@ -233,10 +241,12 @@ def evaluate_individual_models(algorithm_list, test_data, trained_models):
     return predictions, adjusted_y_pred_list, F1_Score_list, PR_AUC_Score_list
 
 
+
+
 def fitness_function(ensemble, train_data, test_data, trained_models,
-                                                      individual_predictions,
-                                                      base_model_predictions_train,algorithm_list ,
-                                                      base_model_predictions_test, y_true_train, y_true_test,
+                     individual_predictions,
+                     base_model_predictions_train, algorithm_list,
+                     base_model_predictions_test, y_true_train, y_true_test,
                      meta_model_type='svm'):
     """
     Evaluate the fitness of an ensemble.
@@ -259,18 +269,7 @@ def fitness_function(ensemble, train_data, test_data, trained_models,
 
     # Evaluate ensemble on training data
 
-    # base_model_predictions_train = []
-    # y_true_train=[]
-    # y_true_test=[]
-    # base_model_predictions_test = []
-    # y_true_train, base_model_predictions_train, y_true_train_dict, base_model_predictions_train_dict = evaluate_model_consistently(
-    #     train_data, trained_models, ensemble,
-    #     is_ensemble=True)
-    # print("y_true_train original")
-    # print(y_true_train)
-    # print('base_model_predictions_train: ')
-    # print(base_model_predictions_test)
-    # Convert the headers to a NumPy array for vectorized operations
+
     header_array_train = np.array(algorithm_list)
 
     # Determine which headers are in the ensemble
@@ -320,14 +319,18 @@ def fitness_function(ensemble, train_data, test_data, trained_models,
     y_scores = meta_model.predict_proba(base_model_predictions_test)[:, 1]
 
     # Calculate evaluation metrics: F1 score and PR AUC
-    _, _, best_f1, pr_auc, adjusted_y_pred = range_based_precision_recall_f1_auc(y_true_test, y_scores)
+    # _, _, best_f1, pr_auc, adjusted_y_pred = range_based_precision_recall_f1_auc(y_true_test, y_scores)
+    best_f1, precision, recall, TP, TN, FP, FN = f1_score(y_scores, y_true_test)
+    # best_f1, precision, recall, TP, TN, FP, FN = f1_soft_score(y_scores, y_true_test)
+    # best_f1 = get_composite_fscore_raw(y_scores, y_true_test)
+    pr_auc = prauc(y_true_test, y_scores)
 
     # Calculate the fitness score as the average of the F1 score and PR AUC
-    fitness = (best_f1 + pr_auc) / 2
-
+    # fitness = (best_f1 + pr_auc) / 2
+    fitness = best_f1
     logger.info(
         f"Evaluated fitness for ensemble {ensemble} with F1 score {best_f1} and PR AUC {pr_auc}, resulting in fitness {fitness}")
-    return best_f1, pr_auc, fitness, adjusted_y_pred
+    return best_f1, pr_auc, fitness, y_scores, y_true_test
 
 
 def selection(population, fitness_scores, num_selected):
@@ -392,7 +395,7 @@ def mutate(ensemble, mutation_rate, algorithm_list):
                 logger.warning(f"No available models to mutate in the ensemble: {mutated_ensemble}")
 
     if random.random() < mutation_rate:
-        if len(mutated_ensemble) > 1 and random.random() > 0.5:
+        if len(mutated_ensemble) > 3 and random.random() > 0.5:
             model_to_remove = random.choice(mutated_ensemble)
             mutated_ensemble.remove(model_to_remove)
             logger.info(f"Removed model {model_to_remove} from ensemble {ensemble}")
@@ -409,7 +412,7 @@ def mutate(ensemble, mutation_rate, algorithm_list):
     return mutated_ensemble
 
 
-def plot_scores_vs_true(data, F1_Score_list, PR_AUC_Score_list, adjusted_y_pred):
+def plot_scores_vs_true(data, F1_Score_list, PR_AUC_Score_list, adjusted_y_pred, list_ensemble, plot_name, plot_path):
     max_arg_f1 = np.argmax(np.array(F1_Score_list))
     max_arg_pr_auc = np.argmax(np.array(PR_AUC_Score_list))
     print(data.entities[0].labels)
@@ -422,34 +425,140 @@ def plot_scores_vs_true(data, F1_Score_list, PR_AUC_Score_list, adjusted_y_pred)
 
     # Converting boolean predictions to integer for easy plotting (True to 1, False to 0)
     predicted_int = predicted_values.astype(int)
-
+    best_= list_ensemble[max_arg_f1]
     # Identifying incorrect predictions
     incorrect_predictions = predicted_int != true_values
     misclassified_count = np.sum(incorrect_predictions)  # Number of misclassifications
     total_anomalies = np.sum(true_values)  # Total number of real anomalies
     total_data = len(true_values)  # Total number of data points
 
-    # Plotting
-    plt.figure(figsize=(12, 6))
-    plt.plot(true_values, '.', label='True Values (Anomalies)', color='blue')  # Plot true values
-    # plt.plot(predicted_int, 'x', label='Predicted Values (Anomalies)', color='red')  # Plot predicted values
-
     # Highlight incorrect predictions with a different marker
+    print(incorrect_predictions)
     if incorrect_predictions.ndim == 2:
-        plt.scatter(np.where(incorrect_predictions)[0], predicted_int[incorrect_predictions[0]], facecolors='none',
-                    edgecolors='purple', s=100, label='Incorrect Predictions', linewidth=2)
+        pass
     else:
+
+        # Plotting
+        plt.figure(figsize=(12, 6))
+        plt.plot(true_values, '.', label='True Values (Anomalies)', color='blue')  # Plot true values
+        # plt.plot(predicted_int, 'x', label='Predicted Values (Anomalies)', color='red')  # Plot predicted values
         plt.scatter(np.where(incorrect_predictions)[0], predicted_int[incorrect_predictions], facecolors='none',
                     edgecolors='purple', s=100, label='Incorrect Predictions', linewidth=2)
-    plt.title(
-        f'True vs. Predicted Anomalies \n Misclassified Anomalies: {misclassified_count}\n Total Anomalies: {total_anomalies} \n Total Data: {total_data}')
-    plt.xlabel('Index')
-    plt.ylabel('Anomaly Presence')
-    plt.yticks([0, 1], ['No Anomaly', 'Anomaly'])  # Set y-ticks to be explicit about what 0 and 1 represent
-    plt.legend()
-    plt.grid(True)
+        plt.title(
+            f'True vs. Predicted Anomalies \n Misclassified Anomalies: {misclassified_count}, {best_}\n Total Anomalies: {total_anomalies} \n Total Data: {total_data}')
+        plt.xlabel('Index')
+        plt.ylabel('Anomaly Presence')
+        plt.yticks([0, 1], ['No Anomaly', 'Anomaly'])  # Set y-ticks to be explicit about what 0 and 1 represent
+        plt.legend()
+        plt.grid(True)
+        # Specify the directory
+        directory = plot_path
+        filename = plot_name
+        full_path = os.path.join(directory, filename)
 
+        # Check if the directory exists, and if not, create it
+        if not os.path.exists(directory):
+            os.makedirs(os.path.dirname(directory), exist_ok=True)
+
+        # Save the figure
+        plt.savefig(full_path, dpi=300)  # Save as PNG file with high resolution
+
+        plt.show()
+
+
+
+
+def plot_models_scores(algorithm_list, test_data, y_scores_list, dataset, entity, F1_Score_list_ind_curent, PR_AUC_Score_list_ind_curent):
+    data = test_data.entities[0].Y
+    targets = test_data.entities[0].labels
+
+    # Ensure unique algorithms and corresponding values
+    unique_algorithms = []
+    unique_y_scores_list = []
+    unique_F1_Score_list = []
+    unique_PR_AUC_Score_list = []
+
+    seen = set()
+    for i, algorithm in enumerate(algorithm_list):
+        if algorithm not in seen:
+            seen.add(algorithm)
+            unique_algorithms.append(algorithm)
+            unique_y_scores_list.append(y_scores_list[i])
+            unique_F1_Score_list.append(F1_Score_list_ind_curent[i])
+            unique_PR_AUC_Score_list.append(PR_AUC_Score_list_ind_curent[i])
+
+    # Determine the number of rows needed
+    num_algorithms = len(unique_algorithms)
+    num_rows = 2 + num_algorithms  # 2 for original data and labels, rest for each algorithm
+
+    # Plot the data
+    fig, axes = plt.subplots(num_rows, 1, figsize=(18, 4 * num_rows), sharex=True)
+
+    # First row: plot the data
+    axes[0].plot(data.flatten(), label='Data', color='blue')
+    axes[0].set_title('Data')
+    axes[0].set_ylabel('Value')
+    axes[0].legend()
+    axes[0].grid(True)
+
+    # Second row: plot the labels with spikes
+    axes[1].plot(targets, label='Labels', color='gray')
+    spike_indices = np.where(targets == 1)[0]
+    spike_values = np.ones_like(spike_indices)  # Set spikes at 1 for visibility
+    axes[1].vlines(spike_indices, ymin=0, ymax=spike_values, color='red', label='Anomalies')
+    axes[1].set_title('Labels')
+    axes[1].set_ylabel('Label')
+    axes[1].grid(True)
+
+    # Loop over the unique y_scores_list and plot each under the original labels
+    for i, algorithm in enumerate(unique_algorithms):
+        y_scores = unique_y_scores_list[i]
+        f1_score_value = unique_F1_Score_list[i]
+        pr_auc_value = unique_PR_AUC_Score_list[i]
+
+        # Plot the y_scores
+        axes[i + 2].plot(y_scores, label=f'{algorithm} Scores', color='gray')
+
+        # Identify spikes, true positives, false positives, and false negatives
+        spike_indices = np.where(y_scores >= 0.5)[0]
+        true_positive_indices = np.intersect1d(spike_indices, np.where(targets == 1)[0])
+        false_positive_indices = np.setdiff1d(spike_indices, true_positive_indices)
+        false_negative_indices = np.setdiff1d(np.where(targets == 1)[0], true_positive_indices)
+
+        # Plot detected anomalies
+        axes[i + 2].vlines(spike_indices, ymin=0, ymax=1, color='red', label='Detected Anomalies')
+
+        # Highlight true positives with a different color
+        # axes[i + 2].vlines(true_positive_indices, ymin=0, ymax=1, color='green', label='True Positives')
+
+        # Highlight false positives with a different color
+        # axes[i + 2].vlines(false_positive_indices, ymin=0, ymax=1, color='orange', label='False Positives')
+
+        # Highlight false negatives with a different color
+        # axes[i + 2].vlines(false_negative_indices, ymin=0, ymax=1, color='purple', label='False Negatives')
+
+        axes[i + 2].set_title(f'{algorithm} Anomaly Scores, F1 Score = {f1_score_value}, PR AUC = {pr_auc_value}')
+        axes[i + 2].set_ylabel('Score')
+        axes[i + 2].grid(True)
+
+    # Add legend to the last axis
+    handles, labels = axes[1].get_legend_handles_labels()
+    detected_handles, detected_labels = axes[2].get_legend_handles_labels()
+    combined_handles = handles + detected_handles
+    combined_labels = labels + detected_labels
+    fig.legend(combined_handles, combined_labels, loc='upper right')
+
+    axes[-1].set_xlabel('Time (index)')
+
+    plt.tight_layout()
+    directory = f'D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD/Outputs/Thomposon/{dataset}/{entity}/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    plt.savefig(f'{directory}/performance_plot_nigg.png')
     plt.show()
+
+
+
 
 
 def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, trained_models, meta_model_type,
@@ -477,11 +586,19 @@ def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, tr
 
     individual_predictions, adjusted_y_pred_ind, F1_Score_list_ind, PR_AUC_Score_list_ind = evaluate_individual_models(
         algorithm_list, test_data, trained_models)
-    plot_scores_vs_true(test_data, F1_Score_list_ind, PR_AUC_Score_list_ind, adjusted_y_pred_ind)
+    # Get the current date and time
+    now = datetime.now()
+
+    # Format the date and time as a string
+    date_time_string = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    plot_name = f'ensemble_scores_{dataset}_{entity}_{meta_model_type}_{population_size}_{generations}_{mutation_rate}_UMS_{date_time_string}.png'
+    plot_path = f'D:/Master/SS_2024_Thesis_ISA/Thesis/Work-docs/RAMS-TSAD/Outputs/GA_Ens/{dataset}/{entity}'
+    plot_scores_vs_true(test_data, F1_Score_list_ind, PR_AUC_Score_list_ind, adjusted_y_pred_ind, algorithm_list, plot_name, plot_path)
     # individual_predictions = []
     population = initialize_population(algorithm_list, population_size)
     print(population)
     evaluated_ensembles = {}  # HashMap to track evaluated ensembles and their scores
+    file_name = f'ensemble_scores_{dataset}_{entity}_{meta_model_type}_{population_size}_{generations}_{mutation_rate}_{date_time_string}.txt'
 
     best_f1 = 0
     best_pr_auc = 0
@@ -489,6 +606,7 @@ def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, tr
     best_ensemble = None
     adjusted_y_pred_list = []
     F1_Score_list = []
+    list_ensemble = []
     PR_AUC_Score_list = []
     fitness_list = []
     y_true_train, base_model_predictions_train, y_true_train_dict, base_model_predictions_train_dict = evaluate_model_consistently(
@@ -512,7 +630,7 @@ def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, tr
                 if ensemble_key not in evaluated_ensembles:
                     fitness_result = fitness_function(ensemble, train_data, test_data, trained_models,
                                                       individual_predictions,
-                                                      base_model_predictions_train,algorithm_list ,
+                                                      base_model_predictions_train, algorithm_list,
                                                       base_model_predictions_test, y_true_train, y_true_test,
                                                       meta_model_type=meta_model_type)
                     evaluated_ensembles[ensemble_key] = fitness_result
@@ -523,6 +641,7 @@ def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, tr
                 adjusted_y_pred = fitness_result[3]
                 adjusted_y_pred_list.append(adjusted_y_pred)
                 F1_Score_list.append(fitness_result[0])
+                list_ensemble.append(ensemble_key)
                 PR_AUC_Score_list.append(fitness_result[1])
                 fitness_list.append(fitness_result[2])
                 fitness_results.append(fitness_result)
@@ -556,11 +675,35 @@ def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, tr
 
         logger.info(f"End of Generation {generation + 1}, Population: {population}")
         print(f"End of Generation {generation + 1}, Population: {population}")
+
+    misclassified_ens=[]
+    for predicts in adjusted_y_pred_list:
+        true_values = np.array(test_data.entities[0].labels)  # 1 for anomaly, 0 for normal
+
+        predicted_values = np.array(predicts)  # True for predicted anomaly, False for no predicted anomaly
+
+        # Converting boolean predictions to integer for easy plotting (True to 1, False to 0)
+        predicted_int = predicted_values.astype(int)
+
+        # Identifying incorrect predictions
+        incorrect_predictions = predicted_int != true_values
+        misclassified_count = np.sum(incorrect_predictions)  # Number of misclassifications
+        misclassified_ens.append(misclassified_count)
+    directory = plot_path
+    os.makedirs(directory, exist_ok=True)
+    output_file = os.path.join(directory, f"GA_Differeneces_results_{dataset}_{entity}.txt")
+    with open(output_file, 'w') as f:
+        f.write("All Ensembles:\n")
+        f.write(f" Evaluated Ensembles: {evaluated_ensembles.keys()}\n")
+        f.write("All Differences:\n")
+        f.write(f"{misclassified_ens}")
     ensemble_names = [name for name in evaluated_ensembles.keys()]
     f1_scores = [result[0] for result in evaluated_ensembles.values()]
     pr_auc_scores = [result[1] for result in evaluated_ensembles.values()]
     flat_ensemble_names = ['_'.join(names) for names in ensemble_names]
-    plot_scores_vs_true(test_data, F1_Score_list, PR_AUC_Score_list, adjusted_y_pred_list)
+    plot_name = f'ensemble_scores_{dataset}_{entity}_{meta_model_type}_{population_size}_{generations}_{mutation_rate}_ensemble_{date_time_string}.png'
+    plot_models_scores(list_ensemble, test_data, adjusted_y_pred_list, dataset, entity, F1_Score_list, PR_AUC_Score_list)
+    plot_scores_vs_true(test_data, F1_Score_list, PR_AUC_Score_list, adjusted_y_pred_list, list_ensemble, plot_name, plot_path)
     # Plot for F1 scores
     plt.figure(figsize=(10, 5))
     plt.plot(flat_ensemble_names, f1_scores, marker='o', linestyle='-', color='b')
@@ -570,6 +713,18 @@ def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, tr
     plt.xticks(rotation=45)  # Rotating the x-axis labels for better readability
     plt.grid(True)
     plt.tight_layout()
+    # Specify the directory
+    directory = plot_path
+    filename = f'ensemble_scores_{dataset}_{entity}_{meta_model_type}_{population_size}_{generations}_{mutation_rate}_F1_{date_time_string}.png'
+    full_path = os.path.join(directory, filename)
+
+    # Check if the directory exists, and if not, create it
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Save the figure
+    plt.savefig(full_path, dpi=300)  # Save as PNG file with high resolution
+
     plt.show()
     #
     # # Plot for PR_AUC scores
@@ -581,6 +736,18 @@ def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, tr
     plt.xticks(rotation=45)
     plt.grid(True)
     plt.tight_layout()
+    # Specify the directory
+    directory = plot_path
+    filename = f'ensemble_scores_{dataset}_{entity}_{meta_model_type}_{population_size}_{generations}_{mutation_rate}_PR_{date_time_string}.png'
+    full_path = os.path.join(directory, filename)
+
+    # Check if the directory exists, and if not, create it
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # Save the figure
+    plt.savefig(full_path, dpi=300)  # Save as PNG file with high resolution
+
     plt.show()
     logger.info(
         f"Best ensemble found: {best_ensemble} with F1 score {best_f1}, PR AUC {best_pr_auc}, and fitness {best_fitness}")
@@ -589,12 +756,12 @@ def genetic_algorithm(dataset, entity, train_data, test_data, algorithm_list, tr
     # Sort evaluated_ensembles by fitness score before writing to the file
     sorted_ensembles = sorted(evaluated_ensembles.items(), key=lambda x: x[1][2], reverse=True)
     # Save the results to a text file
-    file_name = f'ensemble_scores_{dataset}_{entity}_{meta_model_type}_{population_size}_{generations}_{mutation_rate}.txt'
+
     with open(file_name, "w") as f:
         for ensemble, result in sorted_ensembles:
             f.write(f"Ensemble: {list(ensemble)}, f1 : {result[0]}, PR_AUC: {result[1]}, Fitness Score: {result[2]}\n")
 
-    return best_ensemble, best_f1, best_pr_auc, best_fitness
+    return best_ensemble, best_f1, best_pr_auc, best_fitness, individual_predictions, base_model_predictions_train, base_model_predictions_test, y_true_train, y_true_test, meta_model_type
 
 # Usage
 # Assuming train_data and test_data are already loaded and preprocessed

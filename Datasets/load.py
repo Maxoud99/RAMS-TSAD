@@ -489,8 +489,7 @@ def load_anomaly_archive(group, datasets=None, downsampling=None, min_length=Non
                 labels = labels[None, :]
                 entity = Entity(Y=Y.reshape((1, -1)), name=meta_data['name'], labels=labels, verbose=verbose)
                 entities.append(entity)
-    print(entities)
-    print(name)
+
     data = Dataset(entities=entities, name=name, verbose=verbose)
 
     return data

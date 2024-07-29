@@ -10,7 +10,7 @@
 
 from re import L
 import numpy as np
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from sklearn.preprocessing import MinMaxScaler
 import cvxpy as cp
 from itertools import combinations, permutations
@@ -39,27 +39,27 @@ def trimmed_partial_borda(ranks: np.ndarray,
     ----------
     ranks: [# permutations, # items]
         Array of ranks
-    
+
     weights: [# permutations,]
         Weights of each permutation. By default, weights=None.
-    
+
     top_k: int
-        How many items to consider for partial rank aggregation. 
-        By default top_k=None. 
+        How many items to consider for partial rank aggregation.
+        By default top_k=None.
 
     top_kr: int
-        How many permutations to use for rank aggregation. 
-        By default top_kr=None. If top is None, then use 
-        agglomerative clustering. 
+        How many permutations to use for rank aggregation.
+        By default top_kr=None. If top is None, then use
+        agglomerative clustering.
 
     aggregation_type: str
         Type of aggregation method to use while computing influence.
-        We recommend 'borda' in large problems and kemeny in smaller 
+        We recommend 'borda' in large problems and kemeny in smaller
         problems.
 
-    metric: str 
-        Metric of rank reliablity. By default metric='influence'. 
-    
+    metric: str
+        Metric of rank reliablity. By default metric='influence'.
+
     n_neighbors: int
         Number of neighbours to use for proximity based reliability
     """
@@ -97,27 +97,27 @@ def trimmed_borda(ranks: np.ndarray,
     ----------
     ranks: [# permutations, # items]
         Array of ranks
-    
+
     weights: [# permutations,]
         Weights of each permutation. By default, weights=None.
-    
+
     top_k: int
-        How many items to consider for partial rank aggregation. 
-        By default top_k=None. 
+        How many items to consider for partial rank aggregation.
+        By default top_k=None.
 
     top_kr: int
-        How many permutations to use for rank aggregation. 
-        By default top_kr=None. If top is None, then use 
-        agglomerative clustering. 
+        How many permutations to use for rank aggregation.
+        By default top_kr=None. If top is None, then use
+        agglomerative clustering.
 
     aggregation_type: str
         Type of aggregation method to use while computing influence.
-        We recommend 'borda' in large problems and kemeny in smaller 
+        We recommend 'borda' in large problems and kemeny in smaller
         problems.
 
-    metric: str 
+    metric: str
         Metric of rank reliablity. By default metric='influence'.
-    
+
     n_neighbors: int
         Number of neighbours to use for proximity based reliability
     """
@@ -154,27 +154,27 @@ def trimmed_kemeny(ranks: np.ndarray,
     ----------
     ranks: [# permutations, # items]
         Array of ranks
-    
+
     weights: [# permutations,]
         Weights of each permutation. By default, weights=None.
-    
+
     top_k: int
-        How many items to consider for partial rank aggregation. 
-        By default top_k=None. 
+        How many items to consider for partial rank aggregation.
+        By default top_k=None.
 
     top_kr: int
-        How many permutations to use for rank aggregation. 
-        By default top_kr=None. If top is None, then use 
-        agglomerative clustering. 
+        How many permutations to use for rank aggregation.
+        By default top_kr=None. If top is None, then use
+        agglomerative clustering.
 
     aggregation_type: int
         Type of aggregation method to use while computing influence.
-        We recommend 'borda' in large problems and kemeny in smaller 
+        We recommend 'borda' in large problems and kemeny in smaller
         problems.
 
-    metric: str 
+    metric: str
         Metric of rank reliablity. By default metric='influence'.
-    
+
     n_neighbors: int
         Number of neighbours to use for proximity based reliability
 
@@ -294,6 +294,150 @@ def enhanced_markov_chain_rank_aggregator(*rankings: np.ndarray) -> Tuple[float,
     return objective, stationary_distribution.argsort() + 1  # argsort to get ranking from scores
 
 
+
+def calculate_transition_matrix_with_dynamic_weighting(rankings: List[List[str]], base_smoothing: float,
+                                                       smoothing_factor: float) -> np.ndarray:
+    unique_algorithms = sorted(set(algo for ranking in rankings for algo in ranking))
+    algo_index_map = {algo: i for i, algo in enumerate(unique_algorithms)}
+    num_algorithms = len(unique_algorithms)
+
+    # Initialize pairwise comparison matrix
+    pairwise_matrix = np.zeros((num_algorithms, num_algorithms))
+
+    # Fill the pairwise comparison matrix
+    for ranking in rankings:
+        for i in range(len(ranking)):
+            for j in range(i + 1, len(ranking)):
+                pairwise_matrix[algo_index_map[ranking[i]], algo_index_map[ranking[j]]] += 1
+
+    # Add variable smoothing factor based on rank distances
+    for i in range(num_algorithms):
+        for j in range(num_algorithms):
+            if i != j:
+                distance = abs(i - j)
+                pairwise_matrix[i, j] += base_smoothing / (distance * smoothing_factor + 1)
+
+    print("Pairwise Comparison Matrix with Dynamic Smoothing:")
+    print(pairwise_matrix)
+
+    # Apply dynamic weighting based on pairwise differences
+    transition_matrix = np.zeros((num_algorithms, num_algorithms))
+    for i in range(num_algorithms):
+        for j in range(num_algorithms):
+            if i != j:
+                diff = pairwise_matrix[i, j] - pairwise_matrix[j, i]
+                weight = 1 / (1 + np.exp(-diff))  # Sigmoid function for dynamic weighting
+                transition_matrix[i, j] = weight
+
+    return transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
+
+
+def enhanced_markov_chain_rank_aggregator_text(rankings: List[List[str]], base_smoothing: float = 1e-1,
+                                                   smoothing_factor: float = 0.5) -> Tuple[float, List[str]]:
+    """
+    Aggregates multiple sets of rankings using the Markov Chain method with dynamic smoothing adjustment.
+
+    Parameters
+    ----------
+    rankings: List of lists of strings
+        Multiple lists containing named rankings of algorithms to be aggregated.
+    base_smoothing: float
+        Base smoothing factor to balance the pairwise comparison influence.
+    smoothing_factor: float
+        Factor to adjust the base smoothing based on rank positions.
+
+    Returns
+    -------
+    Tuple[float, List[str]]
+        A tuple containing the objective score and the aggregated rank in terms of the algorithm names.
+    """
+    transition_matrix = calculate_transition_matrix_with_dynamic_weighting(rankings, base_smoothing, smoothing_factor)
+
+    # Finding stationary distribution
+    eigenvalues, eigenvectors = np.linalg.eig(transition_matrix.T)
+    stationary_distribution = np.abs(eigenvectors[:, np.argmax(np.isclose(eigenvalues, 1))]).real
+    stationary_distribution /= stationary_distribution.sum()
+
+    # Objective can be the entropy of the stationary distribution
+    epsilon = 1e-10
+    objective = -np.sum(stationary_distribution * np.log(stationary_distribution + epsilon))
+
+    # Extract all unique algorithm names and map them to indices
+    unique_algorithms = sorted(set(algo for ranking in rankings for algo in ranking))
+
+    # Convert the numeric rankings back to algorithm names for the output
+    sorted_indices = np.argsort(stationary_distribution)[::-1]
+    sorted_algorithms = [unique_algorithms[idx] for idx in sorted_indices]
+
+    print("Stationary Distribution:")
+    print(stationary_distribution)
+    print("Sorted Indices:")
+    print(sorted_indices)
+    print("Sorted Algorithms:")
+    print(sorted_algorithms)
+
+    return objective, sorted_algorithms[::-1]
+
+
+
+
+def enhanced_markov_chain_rank_aggregator_text_old(rankings: List[List[str]]) -> Tuple[float, List[str]]:
+    """
+    Aggregates multiple sets of rankings using the Markov Chain method, accepting named algorithms instead of numeric indices.
+
+    Parameters
+    ----------
+    rankings: List of lists of strings
+        Multiple lists containing named rankings of algorithms to be aggregated.
+
+    Returns
+    -------
+    Tuple[float, List[str]]
+        A tuple containing the objective score and the aggregated rank in terms of the algorithm names.
+    """
+    # Extract all unique algorithm names and map them to indices
+    unique_algorithms = sorted(set(algo for ranking in rankings for algo in ranking))
+    algo_index_map = {algo: i for i, algo in enumerate(unique_algorithms)}
+
+    # Convert text rankings to numerical rankings using the map
+    numeric_rankings = [np.array([algo_index_map[algo] for algo in ranking]) for ranking in rankings]
+
+    # Concatenate all rankings and ensure they are integers
+    combined_ranks = np.vstack(numeric_rankings).astype(int)
+
+    n, m = combined_ranks.shape
+    transition_matrix = np.zeros((m, m))
+
+    # Constructing the transition matrix
+    for rank in combined_ranks:
+        for j in range(m - 1):
+            transition_matrix[rank[j], rank[j + 1]] += 1
+
+    # Normalizing the transition matrix
+    row_sums = transition_matrix.sum(axis=1)
+    transition_matrix = np.divide(transition_matrix, row_sums[:, np.newaxis], where=row_sums[:, np.newaxis] != 0)
+
+    # Handling the case where some states are never visited
+    transition_matrix += np.diag(np.where(row_sums == 0, 1, 0))
+
+    # Finding stationary distribution
+    eigenvalues, eigenvectors = np.linalg.eig(transition_matrix.T)
+    stationary_distribution = np.abs(eigenvectors[:, np.argmax(np.isclose(eigenvalues, 1))]).real
+    stationary_distribution /= stationary_distribution.sum()
+
+    # Objective can be the entropy of the stationary distribution
+    epsilon = 1e-10
+    objective = -np.sum(stationary_distribution * np.log(stationary_distribution + epsilon))
+
+    # Convert the numeric rankings back to algorithm names for the output
+    sorted_indices = stationary_distribution.argsort()
+    sorted_algorithms = [unique_algorithms[idx] for idx in sorted_indices]
+
+    return objective, sorted_algorithms
+
+
+
+
 # *********************************************************
 # #########################################################
 
@@ -409,14 +553,14 @@ def kemeny(ranks: np.ndarray,
            verbose: bool = True) -> Tuple[float, np.ndarray]:
     """Kemeny-Young optimal rank aggregation [1]
 
-    We include the ability to incorporate weights of metrics/permutations. 
+    We include the ability to incorporate weights of metrics/permutations.
 
     Parameters
     ----------
-    ranks: 
+    ranks:
         Permutations/Ranks
     weights:
-        Weight of each rank/permutation. 
+        Weight of each rank/permutation.
     verbose:
         Controls verbosity
 
@@ -525,7 +669,7 @@ def _get_trimmed_ranks_clustering(ranks, reliability):
 
 def compute_weights(ranks: np.ndarray,
                     true_rank: Optional[np.ndarray] = None) -> np.ndarray:
-    """Computes the weight of a data point based on its distance from the true permutation. 
+    """Computes the weight of a data point based on its distance from the true permutation.
     """
     n_metrics, n_models = ranks.shape
     if true_rank is None: true_rank = np.arange(n_models)
@@ -575,7 +719,7 @@ def objective(ranks, aggregation_type='kemeny', top_k=None):
 
 
 def influence(ranks, aggregation_type='kemeny', top_k=None) -> np.array:
-    """Computes the reciprocal influence of each permutation/rank on the objective. Ranks with 
+    """Computes the reciprocal influence of each permutation/rank on the objective. Ranks with
     higher influence (and lower reciprocal influence) are more outlying.
     """
     N, n = ranks.shape
@@ -610,7 +754,7 @@ def influence(ranks, aggregation_type='kemeny', top_k=None) -> np.array:
 
 
 def proximity(ranks, n_neighbors: int = 6, top_k=None) -> np.array:
-    """Computes the proximity of each rank to its nearest neighbours. Ranks with higher proximity are more central. 
+    """Computes the proximity of each rank to its nearest neighbours. Ranks with higher proximity are more central.
     """
     if top_k is not None:
         ranks = ranks.astype(float)
@@ -657,7 +801,7 @@ def pagerank(ranks, top_k=None) -> np.array:
 
 
 def averagedistance(ranks, top_k=None) -> np.array:
-    """Computes the average distance of each rank to all other ranks. 
+    """Computes the average distance of each rank to all other ranks.
     Lower average implies that a rank is more reliable.
     """
     if top_k is not None:
